@@ -66,7 +66,7 @@
     }
 
     // from submition api call
-    const trialClassFormContainer = document.querySelector("trial_class_form-container")
+    const trialClassFormContainer = document.querySelector("#trial_class_form-container")
     const form = document.querySelector("#trial-class-form")
     if (!form) return
 
@@ -218,7 +218,7 @@
       rescheduleForm.style.display = "block"
       // form.style.display = "none"
       trialClassFormContainer.style.display = "none"
-      
+
       if (rescheduleForm) {
         const registration = registrationData.registration
 
