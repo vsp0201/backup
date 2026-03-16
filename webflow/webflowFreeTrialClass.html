@@ -209,6 +209,61 @@
       } catch (err) {
         console.error("Error loading trial class registration", err)
       }
+
+      // Set up Cancel Registration button behavior
+      const cancelBtn = document.querySelector(".tc_cancel-registration-btn");
+      const cancelInfoCard = document.querySelector(
+        ".tc_cancel-registration-info-card",
+      );
+      const cancelledCard = document.querySelector(
+        ".tc_registration-cancelled-card",
+      );
+
+      if (cancelBtn) {
+        cancelBtn.addEventListener("click", function () {
+          const cancelUrl =
+            "https://3yf0irxn2c.execute-api.us-west-1.amazonaws.com/dev/camp/trial-class/registration/cancel";
+
+          cancelBtn.disabled = true;
+
+          fetch(cancelUrl, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ token: manageToken }),
+          })
+            .then((res) => {
+              if (!res.ok) {
+                throw new Error("Failed to cancel registration");
+              }
+              return res
+                .text()
+                .then((t) => (t && t.trim() ? JSON.parse(t) : {}));
+            })
+            .then(() => {
+              const infoCard = document.querySelector(
+                ".tc_cancel-registration-info-card",
+              );
+              const doneCard = document.querySelector(
+                ".tc_registration-cancelled-card",
+              );
+              if (infoCard) {
+                infoCard.style.setProperty("display", "none", "important");
+              }
+              if (doneCard) {
+                doneCard.style.removeProperty("display");
+                doneCard.style.setProperty("display", "block", "important");
+              }
+            })
+            .catch((err) => {
+              console.error("Error cancelling trial class registration", err);
+            })
+            .finally(() => {
+              cancelBtn.disabled = false;
+            });
+        });
+      }
     }
 
     // If we have registrationData, prefill the reschedule form
