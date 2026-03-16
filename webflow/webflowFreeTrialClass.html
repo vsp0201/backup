@@ -293,7 +293,7 @@
           studentLastName.value = registration.student?.last_name || ""
         }
 
-        const studentGrade = rescheduleForm.querySelector(".trial-form-select-field")
+        const studentGrade = rescheduleForm.querySelector("#res_student_grade")
         if (studentGrade && registration.student?.grade) {
           studentGrade.value = registration.student.grade
         }
