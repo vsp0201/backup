@@ -1,0 +1,437 @@
+<script>
+    //trial class form
+    document.addEventListener("DOMContentLoaded", async function () {
+      const wrapper = document.querySelector(".trial-class_option-wapper")
+      const grid = wrapper
+        ? wrapper.querySelector(".trial-class-grid-container")
+        : null
+      const template = document.querySelector(".tc_option-label")
+  
+      if (wrapper && grid && template) {
+        const templateClone = template.cloneNode(true)
+        template.remove()
+        // Fatching  trial class card details
+        try {
+          const res = await fetch(`${_BASE_URL_}/camp/trialClassDetail`)
+          const classes = await res.json()
+          const fragment = document.createDocumentFragment()
+  
+          classes.forEach((item) => {
+            const clone = templateClone.cloneNode(true)
+  
+            const dateEl = clone.querySelector(".trial-class_date")
+            if (dateEl) {
+              const date = new Date(item.start_time)
+              dateEl.textContent = date.toLocaleDateString("en-US", {
+                weekday: "short",
+                month: "short",
+                day: "numeric",
+              })
+            }
+  
+            const timeEl = clone.querySelector(".trial-class_time-info")
+            if (timeEl) {
+              const start = utcDateToEasternTime(item.start_time)
+              const end = utcDateToEasternTime(item.end_time)
+  
+              timeEl.textContent = `${start} - ${end} EST`
+            }
+  
+            const gradeEl = clone.querySelector(".trial-class_grade-info")
+            if (gradeEl) {
+              gradeEl.textContent = `${item.grade_label}`
+            }
+  
+            const radio = clone.querySelector("input[type='radio']")
+            if (radio) {
+              const uniqueId = "trial-class-" + item._id
+              radio.id = uniqueId
+              radio.value = item._id
+              radio.name = "trial-class"
+              clone.querySelector("label")?.setAttribute("for", uniqueId)
+            }
+  
+            clone.addEventListener("click", function () {
+              const r = clone.querySelector("input[type='radio']")
+              if (r) r.checked = true
+            })
+  
+            fragment.appendChild(clone)
+          })
+  
+          grid.appendChild(fragment)
+        } catch (err) {
+          console.error("Error loading trial class details", err)
+        }
+      }
+  
+      // from submition api call
+      const form = document.querySelector("#trial-class-form")
+      if (!form) return
+  
+      //Grade dropdown list api call
+      const gradeSelect = form.querySelector(".trial-form-select-field")
+  
+      if (gradeSelect) {
+        try {
+          const res = await fetch(`${_BASE_URL_}/camp/paymentGrades`)
+          const grades = await res.json()
+          gradeSelect.innerHTML = '<option value="">Select Grade</option>'
+  
+          grades.forEach((grade) => {
+            const option = document.createElement("option")
+            option.value = grade.grade_name
+            option.textContent = grade.grade_name
+            gradeSelect.appendChild(option)
+          })
+        } catch (err) {
+          console.error("Error loading payment grades", err)
+        }
+      }
+  
+      const successBox = document.querySelector(".tc_form-done")
+      const failBox = document.querySelector(".tc_form-fail")
+  
+      if (successBox) successBox.style.setProperty("display", "none", "important")
+      if (failBox) failBox.style.setProperty("display", "none", "important")
+  
+      form.setAttribute("action", "#")
+      form.removeAttribute("data-wf-page-id")
+      form.removeAttribute("data-wf-element-id")
+  
+      form.addEventListener("submit", async function (e) {
+        e.preventDefault()
+        e.stopPropagation()
+        e.stopImmediatePropagation()
+  
+        if (successBox)
+          successBox.style.setProperty("display", "none", "important")
+        if (failBox) failBox.style.setProperty("display", "none", "important")
+  
+        const selectedRadio = form.querySelector(
+          "input[name='trial-class']:checked",
+        )
+        if (!selectedRadio) {
+          alert("Please select a trial class.")
+          return
+        }
+  
+        const payload = {
+          student: {
+            first_name: form
+              .querySelector("#student_first_name")
+              .value.trim(),
+            last_name: form.querySelector("#student_last_name").value.trim(),
+            grade: gradeSelect ? gradeSelect.value : "",
+          },
+          parent: {
+            first_name: form.querySelector("#parent_first_name").value.trim(),
+            last_name: form.querySelector("#parent_last_name").value.trim(),
+            email: form.querySelector("#parent_email").value.trim(),
+            phone: form.querySelector("#parent_phone").value.trim(),
+          },
+          trial_class_id: selectedRadio.value,
+          previous_experience: form
+            .querySelector("#previous_experience")
+            .value.trim(),
+          landingURL: sessionStorage.getItem("landingURL") || "",
+        }
+  
+        try {
+          const response = await fetch(
+            `${_BASE_URL_}/camp/trialClassRegistration`,
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(payload),
+            },
+          )
+  
+          const data = await response.json() // ALWAYS parse response
+  
+          if (!response.ok) {
+            // Handle 400 validation error message
+            const errorMessage =
+              data?.error || "Something went wrong. Please try again."
+  
+            if (failBox) {
+              failBox.textContent = errorMessage
+              failBox.style.setProperty("display", "block", "important")
+            }
+  
+            return // stop execution
+          }
+  
+          // SUCCESS CASE
+          form.style.display = "none"
+  
+          setTimeout(() => {
+            if (failBox) failBox.style.setProperty("display", "none", "important")
+            if (successBox)
+              successBox.style.setProperty("display", "block", "important")
+          }, 50)
+  
+          form.reset()
+        } catch (err) {
+          if (failBox) {
+            failBox.textContent = "Something went wrong. Please try again."
+            failBox.style.setProperty("display", "block", "important")
+          }
+        }
+      })
+  
+      // Manage registration view when token is present in the URL
+      const urlParams = new URLSearchParams(window.location.search)
+      const manageToken = urlParams.get("token")
+  
+      let registrationData = null
+  
+      if (manageToken) {
+        // Display registration card when token is present
+        const registrationCard = document.querySelector(".tc_registration-card")
+        if (registrationCard) {
+          registrationCard.style.setProperty("display", "block", "important")
+        }
+  
+        const apiUrl = `https://3yf0irxn2c.execute-api.us-west-1.amazonaws.com/dev/camp/trial-class/registration/manage?token=${encodeURIComponent(
+          manageToken,
+        )}`
+  
+        try {
+          const res = await fetch(apiUrl)
+          if (!res.ok) {
+            throw new Error("Failed to fetch registration details")
+          }
+          const data = await res.json()
+          // Save the data in a variable
+          registrationData = data
+        } catch (err) {
+          console.error("Error loading trial class registration", err)
+        }
+      }
+  
+      // If we have registrationData, prefill the reschedule form
+      if (registrationData && registrationData.registration) {
+        const rescheduleForm = document.querySelector("#trial-class-reschdule-form")
+  
+        rescheduleForm.style.display = "block"
+        form.style.display = "none"
+        
+        if (rescheduleForm) {
+          const registration = registrationData.registration
+  
+          // Map available classes to reschedule form's tc_option-label
+          if (registrationData.available_classes && registrationData.available_classes.length > 0) {
+            const rescheduleWrapper = rescheduleForm.querySelector(".trial-class_option-wapper")
+            const rescheduleGrid = rescheduleWrapper
+              ? rescheduleWrapper.querySelector(".trial-class-grid-container")
+              : null
+            const rescheduleTemplate = rescheduleForm.querySelector(".tc_option-label")
+  
+            if (rescheduleWrapper && rescheduleGrid && rescheduleTemplate) {
+              const rescheduleTemplateClone = rescheduleTemplate.cloneNode(true)
+              rescheduleTemplate.remove()
+              const fragment = document.createDocumentFragment()
+  
+              registrationData.available_classes.forEach((item) => {
+                const clone = rescheduleTemplateClone.cloneNode(true)
+  
+                const dateEl = clone.querySelector(".trial-class_date")
+                if (dateEl) {
+                  const date = new Date(item.start_time)
+                  dateEl.textContent = date.toLocaleDateString("en-US", {
+                    weekday: "short",
+                    month: "short",
+                    day: "numeric",
+                  })
+                }
+  
+                const timeEl = clone.querySelector(".trial-class_time-info")
+                if (timeEl) {
+                  const start = utcDateToEasternTime(item.start_time)
+                  const end = utcDateToEasternTime(item.end_time)
+  
+                  timeEl.textContent = `${start} - ${end} EST`
+                }
+  
+                const gradeEl = clone.querySelector(".trial-class_grade-info")
+                if (gradeEl) {
+                  gradeEl.textContent = `${item.grade_label}`
+                }
+  
+                const radio = clone.querySelector("input[type='radio']")
+                if (radio) {
+                  const uniqueId = "res-trial-class-" + item._id
+                  radio.id = uniqueId
+                  radio.value = item._id
+                  radio.name = "res-trial-class"
+                  clone.querySelector("label")?.setAttribute("for", uniqueId)
+                }
+  
+                clone.addEventListener("click", function () {
+                  const r = clone.querySelector("input[type='radio']")
+                  if (r) r.checked = true
+                })
+  
+                fragment.appendChild(clone)
+              })
+  
+              rescheduleGrid.appendChild(fragment)
+            }
+          }
+  
+          // Prefill student fields
+          const studentFirstName = rescheduleForm.querySelector("#res_student_first_name")
+          if (studentFirstName) {
+            studentFirstName.value = registration.student?.first_name || ""
+          }
+  
+          const studentLastName = rescheduleForm.querySelector("#res_student_last_name")
+          if (studentLastName) {
+            studentLastName.value = registration.student?.last_name || ""
+          }
+  
+          const studentGrade = rescheduleForm.querySelector(".trial-form-select-field")
+          if (studentGrade && registration.student?.grade) {
+            studentGrade.value = registration.student.grade
+          }
+  
+          // Prefill parent fields
+          const parentFirstName = rescheduleForm.querySelector("#res_parent_first_name")
+          if (parentFirstName) {
+            parentFirstName.value = registration.parent?.first_name || ""
+          }
+  
+          const parentLastName = rescheduleForm.querySelector("#res_parent_last_name")
+          if (parentLastName) {
+            parentLastName.value = registration.parent?.last_name || ""
+          }
+  
+          const parentEmail = rescheduleForm.querySelector("#res_parent_email")
+          if (parentEmail) {
+            parentEmail.value = registration.parent?.email || ""
+          }
+  
+          const parentPhone = rescheduleForm.querySelector("#res_parent_phone")
+          if (parentPhone) {
+            parentPhone.value = registration.parent?.phone || ""
+          }
+  
+          // Prefill previous experience
+          const previousExperience = rescheduleForm.querySelector("#res_previous_experience")
+          if (previousExperience) {
+            previousExperience.value = registration.previous_experience || ""
+          }
+  
+          // Make all form fields read-only, except class selection radios
+          const allRescheduleInputs = rescheduleForm.querySelectorAll("input, select, textarea")
+          allRescheduleInputs.forEach((el) => {
+            if (el.tagName === "SELECT") {
+              el.disabled = true
+              return
+            }
+  
+            if (el.type === "radio" || el.type === "checkbox") {
+              // keep these editable so the user can change classes if desired
+              return
+            }
+  
+            el.readOnly = true
+          })
+  
+          // Set up reschedule form submission
+          rescheduleForm.setAttribute("action", "#")
+          rescheduleForm.removeAttribute("data-wf-page-id")
+          rescheduleForm.removeAttribute("data-wf-element-id")
+  
+          const rescheduleSuccessBox = rescheduleForm.querySelector(".tc_form-done")
+          const rescheduleFailBox = rescheduleForm.querySelector(".tc_form-fail")
+  
+          if (rescheduleSuccessBox)
+            rescheduleSuccessBox.style.setProperty("display", "none", "important")
+          if (rescheduleFailBox)
+            rescheduleFailBox.style.setProperty("display", "none", "important")
+  
+          rescheduleForm.addEventListener("submit", async function (e) {
+            e.preventDefault()
+            e.stopPropagation()
+            e.stopImmediatePropagation()
+  
+            if (rescheduleSuccessBox)
+              rescheduleSuccessBox.style.setProperty("display", "none", "important")
+            if (rescheduleFailBox)
+              rescheduleFailBox.style.setProperty("display", "none", "important")
+  
+            const selectedRadio = rescheduleForm.querySelector(
+              "input[name='res-trial-class']:checked",
+            )
+            if (!selectedRadio) {
+              alert("Please select a trial class.")
+              return
+            }
+  
+            const payload = {
+              token: manageToken,
+              new_trial_class_id: selectedRadio.value,
+            }
+  
+            try {
+              const response = await fetch(
+                `${_BASE_URL_}/camp/trial-class/registration/reschedule`,
+                {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify(payload),
+                },
+              )
+  
+              const data = await response.json()
+  
+              if (!response.ok) {
+                const errorMessage =
+                  data?.error || "Something went wrong. Please try again."
+  
+                if (rescheduleFailBox) {
+                  rescheduleFailBox.textContent = errorMessage
+                  rescheduleFailBox.style.setProperty("display", "block", "important")
+                }
+  
+                return
+              }
+  
+              // SUCCESS CASE
+              rescheduleForm.style.display = "none"
+  
+              setTimeout(() => {
+                if (rescheduleFailBox)
+                  rescheduleFailBox.style.setProperty("display", "none", "important")
+                if (rescheduleSuccessBox)
+                  rescheduleSuccessBox.style.setProperty("display", "block", "important")
+              }, 50)
+  
+              rescheduleForm.reset()
+            } catch (err) {
+              if (rescheduleFailBox) {
+                rescheduleFailBox.textContent = "Something went wrong. Please try again."
+                rescheduleFailBox.style.setProperty("display", "block", "important")
+              }
+            }
+          })
+        }
+      }
+    })
+  </script>
+  
+  <script
+    async
+    src="https://cdn.jsdelivr.net/npm/lazy-load-video@latest/dist/custom-video.js"
+  ></script>
+  <style>
+    :root {
+      --plyr-color-main: var(--colors--player-color);
+    }
+    .plyr {
+      border-radius: 8px !important;
+    }
+  </style>
+  
