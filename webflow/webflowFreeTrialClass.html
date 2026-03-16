@@ -293,8 +293,37 @@
           studentLastName.value = registration.student?.last_name || ""
         }
 
-        const studentGrade = rescheduleForm.querySelector("#res_student_grade")
-        if (studentGrade && registration.student?.grade) {
+        // Grade select: must have options before setting value, or the grade won't display
+        const studentGrade = rescheduleForm.querySelector("#res_student_grade") ||
+          rescheduleForm.querySelector(".trial-form-select-field")
+        if (studentGrade && studentGrade.tagName === "SELECT") {
+          if (gradeSelect && gradeSelect.options.length > 1) {
+            studentGrade.innerHTML = ""
+            Array.from(gradeSelect.options).forEach((opt) => {
+              const newOpt = document.createElement("option")
+              newOpt.value = opt.value
+              newOpt.textContent = opt.textContent
+              studentGrade.appendChild(newOpt)
+            })
+          } else {
+            try {
+              const gradeRes = await fetch(`${_BASE_URL_}/camp/paymentGrades`)
+              const grades = await gradeRes.json()
+              studentGrade.innerHTML = '<option value="">Select Grade</option>'
+              grades.forEach((g) => {
+                const option = document.createElement("option")
+                option.value = g.grade_name
+                option.textContent = g.grade_name
+                studentGrade.appendChild(option)
+              })
+            } catch (err) {
+              console.error("Error loading payment grades for reschedule form", err)
+            }
+          }
+          if (registration.student?.grade) {
+            studentGrade.value = registration.student.grade
+          }
+        } else if (studentGrade && registration.student?.grade) {
           studentGrade.value = registration.student.grade
         }
 
