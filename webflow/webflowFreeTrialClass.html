@@ -188,11 +188,9 @@
     let registrationData = null
 
     if (manageToken) {
-      // Display registration card when token is present
       const registrationCard = document.querySelector(".tc_registration-card")
-      if (registrationCard) {
-        registrationCard.style.setProperty("display", "block", "important")
-      }
+      const formContainer = document.querySelector(".trial_class_form-container")
+      const rescheduleForm = document.querySelector("#trial-class-reschdule-form")
 
       const apiUrl = `https://3yf0irxn2c.execute-api.us-west-1.amazonaws.com/dev/camp/trial-class/registration/manage?token=${encodeURIComponent(
         manageToken,
@@ -204,14 +202,98 @@
           throw new Error("Failed to fetch registration details")
         }
         const data = await res.json()
-        // Save the data in a variable
         registrationData = data
       } catch (err) {
         console.error("Error loading trial class registration", err)
       }
 
-      // Set up Cancel Registration button behavior
-      const cancelBtn = document.querySelector(".tc_cancel-registration-btn");
+      // Show registration card when token is present; hide main form and reschedule form initially
+      if (registrationCard) {
+        registrationCard.style.setProperty("display", "block", "important")
+      }
+      if (formContainer) {
+        formContainer.style.setProperty("display", "none", "important")
+      }
+      if (rescheduleForm) {
+        rescheduleForm.style.setProperty("display", "none", "important")
+      }
+
+      // Populate registration card: build and show ALL info rows from API
+      if (registrationData && registrationData.registration && registrationCard) {
+        const registration = registrationData.registration
+        const currentClass = registrationData.current_class || {}
+
+        // Build class date/time string (e.g. "Mon, Jan 15 – 4:00–5:00 PM EST")
+        let classDescription = ""
+        try {
+          if (currentClass.start_time && currentClass.end_time) {
+            const start = new Date(currentClass.start_time)
+            const datePart = start.toLocaleDateString("en-US", {
+              weekday: "short",
+              month: "short",
+              day: "numeric",
+            })
+            const startTime = utcDateToEasternTime(currentClass.start_time)
+            const endTime = utcDateToEasternTime(currentClass.end_time)
+            classDescription = `${datePart} – ${startTime}–${endTime} EST`
+          }
+        } catch (e) {
+          classDescription = "—"
+        }
+
+        const rowsData = [
+          { label: "Student", value: [registration.student?.first_name || "", registration.student?.last_name || ""].filter(Boolean).join(" ") || "—" },
+          { label: "Class", value: classDescription || "—" },
+          { label: "Parent Name", value: [registration.parent?.first_name || "", registration.parent?.last_name || ""].filter(Boolean).join(" ") || "—" },
+          { label: "Student Grade", value: registration.student?.grade || "—" },
+          { label: "Parent Email Address", value: registration.parent?.email || "—" },
+          { label: "Parent Phone Number", value: registration.parent?.phone || "—" }
+        ]
+
+        // Find container for rows (inside card); use existing .tc_student-card or the card itself
+        let container = registrationCard.querySelector(".tc_student-card")
+        if (!container) {
+          container = document.createElement("div")
+          container.className = "tc_student-card"
+          // Insert before the button container if present, else at end of card
+          const btnContainer = registrationCard.querySelector(".tc_registration-button-container")
+          if (btnContainer) {
+            registrationCard.insertBefore(container, btnContainer)
+          } else {
+            registrationCard.appendChild(container)
+          }
+        }
+
+        // Clear existing rows and build all rows so every field is visible
+        container.innerHTML = ""
+        rowsData.forEach(({ label, value }) => {
+          const row = document.createElement("div")
+          row.className = "tc_student-info-row"
+          const labelEl = document.createElement("p")
+          labelEl.className = "tc_student-info-label"
+          labelEl.textContent = label
+          const valueEl = document.createElement("p")
+          valueEl.className = "tc_student-info-value"
+          valueEl.textContent = value
+          row.appendChild(labelEl)
+          row.appendChild(valueEl)
+          container.appendChild(row)
+        })
+      }
+
+      // Reschedule button: show reschedule form, hide registration card
+      const rescheduleBtn = document.querySelector(".tc_reschedule-btn")
+      if (rescheduleBtn && registrationCard && rescheduleForm) {
+        rescheduleBtn.addEventListener("click", function () {
+          registrationCard.style.setProperty("display", "none", "important")
+          rescheduleForm.style.removeProperty("display")
+          rescheduleForm.style.setProperty("display", "block", "important")
+        })
+      }
+
+      // Cancel Registration button (support both class names used in Webflow)
+      const cancelBtn = document.querySelector(".tc_cancel-registration-btn") ||
+        document.querySelector(".tc_cancel-btn");
       const cancelInfoCard = document.querySelector(
         ".tc_cancel-registration-info-card",
       );
@@ -266,13 +348,9 @@
       }
     }
 
-    // If we have registrationData, prefill the reschedule form
+    // If we have registrationData, prefill the reschedule form (shown when user clicks Reschedule on the card)
     if (registrationData && registrationData.registration) {
       const rescheduleForm = document.querySelector("#trial-class-reschdule-form")
-
-      rescheduleForm.style.display = "block"
-      // form.style.display = "none"
-      trialClassFormContainer.style.display = "none"
 
       if (rescheduleForm) {
         const registration = registrationData.registration
