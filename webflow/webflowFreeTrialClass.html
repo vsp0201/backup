@@ -31,7 +31,7 @@
         const classes = await res.json()
         const fragment = document.createDocumentFragment()
 
-        let firstRadio = null
+     
 
         classes.forEach((item) => {
           const clone = templateClone.cloneNode(true)
@@ -66,11 +66,6 @@
             radio.value = item._id
             radio.name = "trial-class"
             clone.querySelector("label")?.setAttribute("for", uniqueId)
-
-            // Keep reference to the first available class radio
-            if (!firstRadio) {
-              firstRadio = radio
-            }
           }
 
           clone.addEventListener("click", function () {
@@ -83,10 +78,7 @@
 
         grid.appendChild(fragment)
 
-        // By default, select the first available class radio button
-        if (firstRadio) {
-          firstRadio.checked = true
-        }
+      
       } catch (err) {
         console.error("Error loading trial class details", err)
       }
@@ -338,6 +330,14 @@
           registrationCard.style.setProperty("display", "none", "important")
           rescheduleForm.style.removeProperty("display")
           rescheduleForm.style.setProperty("display", "block", "important")
+
+          // When reschedule form becomes visible, select the first class radio by default
+          const firstVisibleRescheduleRadio = rescheduleForm.querySelector(
+            "input[name='res-trial-class']",
+          )
+          if (firstVisibleRescheduleRadio) {
+            firstVisibleRescheduleRadio.checked = true
+          }
         })
       }
 
