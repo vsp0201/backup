@@ -508,8 +508,14 @@
         rescheduleForm.removeAttribute("data-wf-page-id")
         rescheduleForm.removeAttribute("data-wf-element-id")
 
-        const rescheduleSuccessBox = rescheduleForm.querySelector(".tc_form-done")
-        const rescheduleFailBox = rescheduleForm.querySelector(".tc_form-fail")
+        // Reschedule success / error boxes
+        // Prefer Webflow elements by ID if they exist, otherwise fall back to the generic classes
+        const rescheduleSuccessBox =
+          document.getElementById("trial-class-res-form-success-submission") ||
+          rescheduleForm.querySelector(".tc_form-done")
+        const rescheduleFailBox =
+          document.getElementById("trial-class-res-form-error-submission") ||
+          rescheduleForm.querySelector(".tc_form-fail")
 
         if (rescheduleSuccessBox)
           rescheduleSuccessBox.style.setProperty("display", "none", "important")
