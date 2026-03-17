@@ -31,6 +31,8 @@
         const classes = await res.json()
         const fragment = document.createDocumentFragment()
 
+        let firstRadio = null
+
         classes.forEach((item) => {
           const clone = templateClone.cloneNode(true)
 
@@ -64,6 +66,11 @@
             radio.value = item._id
             radio.name = "trial-class"
             clone.querySelector("label")?.setAttribute("for", uniqueId)
+
+            // Keep reference to the first available class radio
+            if (!firstRadio) {
+              firstRadio = radio
+            }
           }
 
           clone.addEventListener("click", function () {
@@ -75,6 +82,11 @@
         })
 
         grid.appendChild(fragment)
+
+        // By default, select the first available class radio button
+        if (firstRadio) {
+          firstRadio.checked = true
+        }
       } catch (err) {
         console.error("Error loading trial class details", err)
       }
@@ -412,6 +424,8 @@
             rescheduleTemplate.remove()
             const fragment = document.createDocumentFragment()
 
+            let firstRescheduleRadio = null
+
             if(rescheduleGrid && registrationData.current_class) {
               const currentClass = registrationData.current_class
               registrationData.available_classes.unshift(currentClass)
@@ -450,6 +464,11 @@
                 radio.value = item._id
                 radio.name = "res-trial-class"
                 clone.querySelector("label")?.setAttribute("for", uniqueId)
+
+                // Keep reference to the first available reschedule class radio
+                if (!firstRescheduleRadio) {
+                  firstRescheduleRadio = radio
+                }
               }
 
               clone.addEventListener("click", function () {
@@ -461,6 +480,11 @@
             })
 
             rescheduleGrid.appendChild(fragment)
+
+            // By default, select the first available reschedule class radio button
+            if (firstRescheduleRadio) {
+              firstRescheduleRadio.checked = true
+            }
           }
         }
 
