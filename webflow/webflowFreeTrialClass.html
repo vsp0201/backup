@@ -412,6 +412,11 @@
             rescheduleTemplate.remove()
             const fragment = document.createDocumentFragment()
 
+            if(rescheduleGrid && registrationData.current_class) {
+              const currentClass = registrationData.current_class
+              registrationData.available_classes.unshift(currentClass)
+            }
+
             registrationData.available_classes.forEach((item) => {
               const clone = rescheduleTemplateClone.cloneNode(true)
 
