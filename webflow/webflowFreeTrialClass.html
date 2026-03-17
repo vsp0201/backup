@@ -634,6 +634,8 @@
               const errorMessage =
                 data?.error || "Something went wrong. Please try again."
 
+              // ERROR CASE: hide form, show only error
+              rescheduleForm.style.setProperty("display", "none", "important")
               if (rescheduleFailBox) {
                 rescheduleFailBox.textContent = errorMessage
                 rescheduleFailBox.style.setProperty("display", "block", "important")
@@ -643,7 +645,7 @@
             }
 
             // SUCCESS CASE
-            rescheduleForm.style.display = "none"
+            rescheduleForm.style.setProperty("display", "none", "important")
 
             setTimeout(() => {
               if (rescheduleFailBox)
@@ -654,6 +656,8 @@
 
             rescheduleForm.reset()
           } catch (err) {
+            // NETWORK / UNEXPECTED ERROR: hide form, show only generic error
+            rescheduleForm.style.setProperty("display", "none", "important")
             if (rescheduleFailBox) {
               rescheduleFailBox.textContent = "Something went wrong. Please try again."
               rescheduleFailBox.style.setProperty("display", "block", "important")
