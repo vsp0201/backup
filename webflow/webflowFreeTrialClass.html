@@ -1,10 +1,25 @@
 <script>
   //trial class form
   document.addEventListener("DOMContentLoaded", async function () {
+
+    // By default hide all the formm Containers
+    const trialClassFormContainer = document.querySelector(".trial_class_form-container")
+    if (trialClassFormContainer) {
+      trialClassFormContainer.style.setProperty("display", "none", "important")
+    }
+    
+    const rescheduleForm = document.querySelector("#trial-class-reschdule-form")
+    if (rescheduleForm) {
+      rescheduleForm.style.setProperty("display", "none", "important")
+    }
+    
+    const registrationCard = document.querySelector(".tc_registration-card")
+    if (registrationCard) {
+      registrationCard.style.setProperty("display", "none", "important")
+    }
+
     const wrapper = document.querySelector(".trial-class_option-wapper")
-    const grid = wrapper
-      ? wrapper.querySelector(".trial-class-grid-container")
-      : null
+    const grid = wrapper ? wrapper.querySelector(".trial-class-grid-container"): null
     const template = document.querySelector(".tc_option-label")
 
     if (wrapper && grid && template) {
@@ -66,7 +81,6 @@
     }
 
     // from submition api call
-    const trialClassFormContainer = document.querySelector(".trial_class_form-container")
     const form = document.querySelector("#trial-class-form")
     if (!form) return
 
@@ -205,6 +219,30 @@
         registrationData = data
       } catch (err) {
         console.error("Error loading trial class registration", err)
+        registrationData = null
+      }
+
+      // If token is invalid or expired, show the dedicated message and stop.
+      if (!registrationData || !registrationData.registration) {
+        const invalidTokenEl = document.getElementById("invalid-or-expired-token-found")
+
+        // Keep all forms/cards hidden, only show the invalid-token message if it exists.
+        if (trialClassFormContainer) {
+          trialClassFormContainer.style.setProperty("display", "none", "important")
+        }
+        if (registrationCard) {
+          registrationCard.style.setProperty("display", "none", "important")
+        }
+        if (rescheduleForm) {
+          rescheduleForm.style.setProperty("display", "none", "important")
+        }
+
+        if (invalidTokenEl) {
+          invalidTokenEl.style.removeProperty("display")
+          invalidTokenEl.style.setProperty("display", "block", "important")
+        }
+
+        return
       }
 
       // Show registration card when token is present; hide main form and reschedule form initially
@@ -345,6 +383,12 @@
               cancelBtn.disabled = false;
             });
         });
+      }
+    } else {
+      // No manage token in URL: show the standard trial class registration form
+      if (trialClassFormContainer) {
+        trialClassFormContainer.style.removeProperty("display")
+        trialClassFormContainer.style.setProperty("display", "block", "important")
       }
     }
 
